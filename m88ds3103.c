@@ -5,6 +5,7 @@
  * Copyright (C) 2013 Antti Palosaari <crope@iki.fi>
  */
 
+#include <linux/version.h>
 #include "m88ds3103_priv.h"
 
 static const struct dvb_frontend_ops m88ds3103_ops;
@@ -268,7 +269,7 @@ static int m88ds3103_read_status(struct dvb_frontend *fe,
 			}
 			break;
 		default:
-			dev_dbg(&client->dev, "invalid delivery_system\n");
+			dev_info(&client->dev, "invalid delivery_system\n");
 			ret = -EINVAL;
 			goto err;
 		}
@@ -715,7 +716,9 @@ static int m88ds3103_set_frontend(struct dvb_frontend *fe)
 		usleep_range(10000, 20000);
 	} else {
 	/* set M88DS3103 mclk and ts mclk. */
-		dev->mclk = 96000000;
+		//dev->mclk = 96000000;
+		//dev->mclk = 18000000;
+		dev->mclk = 24000000;
 
 		switch (dev->cfg->ts_mode) {
 		case M88DS3103_TS_SERIAL:
@@ -1004,6 +1007,13 @@ static int m88ds3103_set_frontend(struct dvb_frontend *fe)
 	if (ret)
 		goto err;
 
+	if (dev->chiptype == M88DS3103_CHIPTYPE_3103B) {
+		/* to light up the LOCK led */
+		ret = m88ds3103_update_bits(dev, 0x11, 0x80, 0x00);
+		if (ret)
+			goto err;
+	}
+
 	dev->delivery_system = c->delivery_system;
 
 	return 0;
@@ -1277,7 +1287,7 @@ static int m88ds3103_get_frontend(struct dvb_frontend *fe,
 			c->fec_inner = FEC_9_10;
 			break;
 		default:
-			dev_dbg(&client->dev, "invalid fec_inner\n");
+			dev_info(&client->dev, "invalid fec_inner\n");
 		}
 
 		switch ((buf[0] >> 5) & 0x01) {
@@ -1693,8 +1703,13 @@ struct dvb_frontend *m88ds3103_attach(const struct m88ds3103_config *cfg,
 	strscpy(board_info.type, "m88ds3103", I2C_NAME_SIZE);
 	board_info.addr = cfg->i2c_addr;
 	board_info.platform_data = &pdata;
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 8, 0)
 	client = i2c_new_client_device(i2c, &board_info);
 	if (!i2c_client_has_driver(client))
+#else
+	client = i2c_new_device(i2c, &board_info);
+	if (client == NULL || client->dev.driver == NULL)
+#endif
 		return NULL;
 
 	*tuner_i2c_adapter = pdata.get_i2c_adapter(client);
@@ -1794,9 +1809,9 @@ static int m88ds3103_probe(struct i2c_client *client,
 	dev->config.lnb_en_pol = pdata->lnb_en_pol;
 	dev->cfg = &dev->config;
 	/* create regmap */
-	dev->regmap_config.reg_bits = 8;
-	dev->regmap_config.val_bits = 8;
-	dev->regmap_config.lock_arg = dev;
+	dev->regmap_config.reg_bits = 8,
+	dev->regmap_config.val_bits = 8,
+	dev->regmap_config.lock_arg = dev,
 	dev->regmap = devm_regmap_init_i2c(client, &dev->regmap_config);
 	if (IS_ERR(dev->regmap)) {
 		ret = PTR_ERR(dev->regmap);
