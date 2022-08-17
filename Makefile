@@ -20,3 +20,6 @@ install:
 	@$(foreach file, $(wildcard m88ds3103.ko), cp -rf $(file) /lib/modules/$(shell uname -r)/kernel/drivers/media/dvb-frontends;)
 	@$(foreach file, $(wildcard dvb-usb-dw2102.ko), cp -rf $(file) /lib/modules/$(shell uname -r)/kernel/drivers/media/usb/dvb-usb;)
 	@depmod -a
+	@$(foreach file, $(wildcard dvb-demod-m88rs6000.fw), cp -rf $(file) /lib/firmware;)
+	@$(foreach file, $(wildcard dvb-demod-m88ds3103.fw), cp -rf $(file) /lib/firmware;)
+	@$(foreach file, $(wildcard dvb-demod-m88ds3103b.fw), cp -rf $(file) /lib/firmware;)
