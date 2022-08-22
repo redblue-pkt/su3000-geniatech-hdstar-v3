@@ -716,9 +716,12 @@ static int m88ds3103_set_frontend(struct dvb_frontend *fe)
 		usleep_range(10000, 20000);
 	} else {
 	/* set M88DS3103 mclk and ts mclk. */
-		//dev->mclk = 96000000;
+		if (dev->chiptype == M88DS3103_CHIPTYPE_3103B)
+			dev->mclk = 24000000;
+		else
+			dev->mclk = 96000000;
 		//dev->mclk = 18000000;
-		dev->mclk = 24000000;
+		//dev->mclk = 24000000;
 
 		switch (dev->cfg->ts_mode) {
 		case M88DS3103_TS_SERIAL:
