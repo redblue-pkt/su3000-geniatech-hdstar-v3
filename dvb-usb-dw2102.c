@@ -62,6 +62,8 @@
 
 #define	err_str "did not find the firmware file '%s'. You can use <kernel_dir>/scripts/get_dvb_firmware to get the firmware"
 
+//#define USE_REMOTE
+
 struct dw2102_state {
 	u8 initialized;
 	u8 last_lock;
@@ -167,12 +169,14 @@ static int dw2102_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 				msg[0].buf[0] = buf6[0];
 			}
 			break;
+#ifdef USE_REMOTE
 		case (DW2102_RC_QUERY):
 			dw210x_op_rw(d->udev, 0xb8, 0, 0,
 					buf6, 2, DW210X_READ_MSG);
 			msg[0].buf[0] = buf6[0];
 			msg[0].buf[1] = buf6[1];
 			break;
+#endif
 		case (DW2102_VOLTAGE_CTRL):
 			buf6[0] = 0x30;
 			buf6[1] = msg[0].buf[0];
@@ -244,12 +248,14 @@ static int dw2102_serit_i2c_transfer(struct i2c_adapter *adap,
 			dw210x_op_rw(d->udev, 0xc2, 0, 0, buf6,
 					msg[0].len + 2, DW210X_WRITE_MSG);
 			break;
+#ifdef USE_REMOTE
 		case(DW2102_RC_QUERY):
 			dw210x_op_rw(d->udev, 0xb8, 0, 0,
 					buf6, 2, DW210X_READ_MSG);
 			msg[0].buf[0] = buf6[0];
 			msg[0].buf[1] = buf6[1];
 			break;
+#endif
 		case(DW2102_VOLTAGE_CTRL):
 			buf6[0] = 0x30;
 			buf6[1] = msg[0].buf[0];
@@ -344,6 +350,7 @@ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg ms
 					obuf, msg[0].len + 2, DW210X_WRITE_MSG);
 			break;
 		}
+#ifdef USE_REMOTE
 		case(DW2102_RC_QUERY): {
 			u8 ibuf[2];
 			dw210x_op_rw(d->udev, 0xb8, 0, 0,
@@ -351,6 +358,7 @@ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg ms
 			memcpy(msg[0].buf, ibuf , 2);
 			break;
 		}
+#endif
 		case(DW2102_VOLTAGE_CTRL): {
 			u8 obuf[2];
 			obuf[0] = 0x30;
@@ -382,6 +390,7 @@ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], i
 
 	for (j = 0; j < num; j++) {
 		switch (msg[j].addr) {
+#ifdef USE_REMOTE
 		case(DW2102_RC_QUERY): {
 			u8 ibuf[2];
 			dw210x_op_rw(d->udev, 0xb8, 0, 0,
@@ -389,6 +398,7 @@ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], i
 			memcpy(msg[j].buf, ibuf , 2);
 			break;
 		}
+#endif
 		case(DW2102_VOLTAGE_CTRL): {
 			u8 obuf[2];
 			obuf[0] = 0x30;
@@ -531,6 +541,7 @@ static int dw3101_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 					obuf, msg[0].len + 2, DW210X_WRITE_MSG);
 			break;
 		}
+#ifdef USE_REMOTE
 		case(DW2102_RC_QUERY): {
 			u8 ibuf[2];
 			dw210x_op_rw(d->udev, 0xb8, 0, 0,
@@ -538,6 +549,7 @@ static int dw3101_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 			memcpy(msg[0].buf, ibuf , 2);
 			break;
 		}
+#endif
 		}
 
 		break;
@@ -570,6 +582,7 @@ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 
 	for (j = 0; j < num; j++) {
 		switch (msg[j].addr) {
+#ifdef USE_REMOTE
 		case (DW2102_RC_QUERY): {
 			u8 ibuf[5];
 			dw210x_op_rw(d->udev, 0xb8, 0, 0,
@@ -577,6 +590,7 @@ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 			memcpy(msg[j].buf, ibuf + 3, 2);
 			break;
 		}
+#endif
 		case (DW2102_VOLTAGE_CTRL): {
 			u8 obuf[2];
 
@@ -718,6 +732,7 @@ static int su3000_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 					state->data, 0, 0) < 0)
 				err("i2c transfer failed.");
 			break;
+#ifdef USE_REMOTE
 		case DW2102_RC_QUERY:
 			state->data[0] = 0x10;
 			if (dvb_usb_generic_rw(d, state->data, 1,
@@ -726,6 +741,7 @@ static int su3000_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 			msg[0].buf[1] = state->data[0];
 			msg[0].buf[0] = state->data[1];
 			break;
+#endif
 		default:
 			if (3 + msg[0].len > sizeof(state->data)) {
 				warn("i2c wr: len=%d is too big!\n",
@@ -770,7 +786,103 @@ static int su3000_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 
 		if (dvb_usb_generic_rw(d, state->data, msg[0].len + 4,
 					state->data, msg[1].len + 1, 0) < 0)
-			err("i2c transfer failed.");
+			err("i2c transfer failed .");
+
+		memcpy(msg[1].buf, &state->data[1], msg[1].len);
+		break;
+	default:
+		warn("more than 2 i2c messages at a time is not handled yet.");
+		break;
+	}
+	mutex_unlock(&d->data_mutex);
+	mutex_unlock(&d->i2c_mutex);
+	return num;
+}
+
+static int new_su3000_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+								int num)
+{
+	struct dvb_usb_device *d = i2c_get_adapdata(adap);
+	struct dw2102_state *state;
+
+	if (!d)
+		return -ENODEV;
+
+	state = d->priv;
+
+	if (mutex_lock_interruptible(&d->i2c_mutex) < 0)
+		return -EAGAIN;
+	if (mutex_lock_interruptible(&d->data_mutex) < 0) {
+		mutex_unlock(&d->i2c_mutex);
+		return -EAGAIN;
+	}
+
+	switch (num) {
+	case 1:
+		switch (msg[0].addr) {
+		case SU3000_STREAM_CTRL:
+			state->data[0] = msg[0].buf[0] + 0x36;
+			state->data[1] = 3;
+			state->data[2] = 0;
+			if (dvb_usb_generic_rw(d, state->data, 3,
+					state->data, 0, 0) < 0)
+				err("i2c transfer failed SU3000_STREAM_CTRL.");
+			break;
+#ifdef USE_REMOTE
+		case DW2102_RC_QUERY:
+			state->data[0] = 0x10;
+			if (dvb_usb_generic_rw(d, state->data, 1,
+					state->data, 2, 0) < 0)
+				err("i2c transfer failed DW2102_RC_QUERY.");
+			msg[0].buf[1] = state->data[0];
+			msg[0].buf[0] = state->data[1];
+			break;
+#endif
+		default:
+			if (3 + msg[0].len > sizeof(state->data)) {
+				warn("i2c wr: len=%d is too big!\n",
+				     msg[0].len);
+				num = -EOPNOTSUPP;
+				break;
+			}
+
+			/* always i2c write*/
+			state->data[0] = 0x08;
+			state->data[1] = msg[0].addr;
+			state->data[2] = msg[0].len;
+
+			memcpy(&state->data[3], msg[0].buf, msg[0].len);
+
+			if (dvb_usb_generic_rw(d, state->data, msg[0].len + 3,
+						state->data, 1, 0) < 0)
+				err("i2c transfer failed DEFAULT.");
+
+		}
+		break;
+	case 2:
+		/* always i2c read */
+		if (4 + msg[0].len > sizeof(state->data)) {
+			warn("i2c rd: len=%d is too big!\n",
+			     msg[0].len);
+			num = -EOPNOTSUPP;
+			break;
+		}
+		if (1 + msg[1].len > sizeof(state->data)) {
+			warn("i2c rd: len=%d is too big!\n",
+			     msg[1].len);
+			num = -EOPNOTSUPP;
+			break;
+		}
+
+		state->data[0] = 0x09;
+		state->data[1] = msg[0].len;
+		state->data[2] = msg[1].len;
+		state->data[3] = msg[0].addr;
+		memcpy(&state->data[4], msg[0].buf, msg[0].len);
+
+		if (dvb_usb_generic_rw(d, state->data, msg[0].len + 4,
+					state->data, msg[1].len + 1, 0) < 0)
+			err("i2c transfer failed .");
 
 		memcpy(msg[1].buf, &state->data[1], msg[1].len);
 		break;
@@ -820,6 +932,11 @@ static struct i2c_algorithm s6x0_i2c_algo = {
 
 static struct i2c_algorithm su3000_i2c_algo = {
 	.master_xfer = su3000_i2c_transfer,
+	.functionality = dw210x_i2c_func,
+};
+
+static struct i2c_algorithm new_su3000_i2c_algo = {
+	.master_xfer = new_su3000_i2c_transfer,
 	.functionality = dw210x_i2c_func,
 };
 
@@ -1553,33 +1670,19 @@ static int su3000_frontend_attach(struct dvb_usb_adapter *adap)
 		return -ENODEV;
 	}
 
-	/* First try ds300x version */
-	adap->fe_adap[0].fe = dvb_attach(ds3000_attach, &su3000_ds3000_config,
-					&d->i2c_adap);
-	if (adap->fe_adap[0].fe == NULL){
-		info("Failed to attach DS300X, try to attach DS3103!\n");
-		goto attach2;
-	}
-
-
-	info("Attached DS3000/TS2020!\n");
-	goto attach3;
-
-attach2:
 	/* attach demod */
 	m88ds3103_pdata.clk = 27000000;
 	m88ds3103_pdata.i2c_wr_max = 33;
 	m88ds3103_pdata.ts_mode = M88DS3103_TS_PARALLEL;
-	m88ds3103_pdata.ts_clk = 16000;
+	m88ds3103_pdata.ts_clk = 24000;
 	m88ds3103_pdata.ts_clk_pol = 0;
 	m88ds3103_pdata.spec_inv = 0;
 	m88ds3103_pdata.agc = 0x99;
 	m88ds3103_pdata.agc_inv = 0;
-	m88ds3103_pdata.clk_out = M88DS3103_CLOCK_OUT_DISABLED;
+	m88ds3103_pdata.clk_out = M88DS3103_CLOCK_OUT_ENABLED;
 	m88ds3103_pdata.envelope_mode = 0;
 	m88ds3103_pdata.lnb_hv_pol = 1;
 	m88ds3103_pdata.lnb_en_pol = 0;
-
 	memset(&board_info, 0, sizeof(board_info));
 	if (demod_addr == 0x6a)
 		strscpy(board_info.type, "m88ds3103b", I2C_NAME_SIZE);
@@ -1588,7 +1691,6 @@ attach2:
 	board_info.addr = demod_addr;
 	board_info.platform_data = &m88ds3103_pdata;
 	request_module("m88ds3103");
-
 #if LINUX_VERSION_CODE > KERNEL_VERSION(5, 5, 0)
 	client = i2c_new_client_device(&d->i2c_adap, &board_info);
 	if (!i2c_client_has_driver(client))
@@ -1611,7 +1713,7 @@ attach2:
 	ts2020_config.clk_out = TS2020_CLK_OUT_ENABLED_XTALOUT;
 	ts2020_config.loop_through = 0;
 	ts2020_config.get_agc_pwm = m88ds3103_get_agc_pwm;
-
+	
 	memset(&board_info, 0, sizeof(board_info));
 	strscpy(board_info.type, "ts2022", I2C_NAME_SIZE);
 	board_info.addr = 0x60;
@@ -1639,9 +1741,7 @@ attach2:
 			adap->fe_adap[0].fe->ops.tuner_ops.get_rf_strength;
 
 	state->i2c_client_tuner = client;
-	goto attach3;
 
-attach3:
 	/* hook fe: need to resync the slave fifo when signal locks */
 	state->fe_read_status = adap->fe_adap[0].fe->ops.read_status;
 	adap->fe_adap[0].fe->ops.read_status = tt_s2_4600_read_status;
@@ -1827,6 +1927,7 @@ static int dw2102_rc_query(struct dvb_usb_device *d)
 	return 0;
 }
 
+#ifdef USE_REMOTE
 static int prof_rc_query(struct dvb_usb_device *d)
 {
 	u8 key[2];
@@ -1870,6 +1971,7 @@ static int su3000_rc_query(struct dvb_usb_device *d)
 
 	return 0;
 }
+#endif
 
 enum dw2102_table_entry {
 	CYPRESS_DW2102,
@@ -2070,7 +2172,7 @@ static struct dvb_usb_device_properties dw2102_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &dw2102_serit_i2c_algo,
-
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_DM1105_NEC,
@@ -2078,6 +2180,7 @@ static struct dvb_usb_device_properties dw2102_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
+#endif
 
 	.generic_bulk_ctrl_endpoint = 0x81,
 	/* parameter for the MPEG2-data transfer */
@@ -2126,6 +2229,7 @@ static struct dvb_usb_device_properties dw2104_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &dw2104_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_DM1105_NEC,
@@ -2133,7 +2237,7 @@ static struct dvb_usb_device_properties dw2104_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
-
+#endif
 	.generic_bulk_ctrl_endpoint = 0x81,
 	/* parameter for the MPEG2-data transfer */
 	.num_adapters = 1,
@@ -2177,6 +2281,7 @@ static struct dvb_usb_device_properties dw3101_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &dw3101_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_DM1105_NEC,
@@ -2184,7 +2289,7 @@ static struct dvb_usb_device_properties dw3101_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
-
+#endif
 	.generic_bulk_ctrl_endpoint = 0x81,
 	/* parameter for the MPEG2-data transfer */
 	.num_adapters = 1,
@@ -2226,6 +2331,7 @@ static struct dvb_usb_device_properties s6x0_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &s6x0_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_TEVII_NEC,
@@ -2233,7 +2339,7 @@ static struct dvb_usb_device_properties s6x0_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
-
+#endif
 	.generic_bulk_ctrl_endpoint = 0x81,
 	.num_adapters = 1,
 	.download_firmware = dw2102_load_firmware,
@@ -2273,6 +2379,7 @@ static struct dvb_usb_device_properties p1100_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &s6x0_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_TBS_NEC,
@@ -2280,7 +2387,7 @@ static struct dvb_usb_device_properties p1100_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = prof_rc_query,
 	},
-
+#endif
 	.generic_bulk_ctrl_endpoint = 0x81,
 	.num_adapters = 1,
 	.download_firmware = dw2102_load_firmware,
@@ -2320,6 +2427,7 @@ static struct dvb_usb_device_properties s660_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &s6x0_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_TEVII_NEC,
@@ -2327,7 +2435,7 @@ static struct dvb_usb_device_properties s660_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = dw2102_rc_query,
 	},
-
+#endif
 	.generic_bulk_ctrl_endpoint = 0x81,
 	.num_adapters = 1,
 	.download_firmware = dw2102_load_firmware,
@@ -2375,6 +2483,7 @@ static struct dvb_usb_device_properties p7500_properties = {
 	.no_reconnect = 1,
 
 	.i2c_algo = &s6x0_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_TBS_NEC,
@@ -2382,7 +2491,7 @@ static struct dvb_usb_device_properties p7500_properties = {
 		.allowed_protos   = RC_PROTO_BIT_NEC,
 		.rc_query = prof_rc_query,
 	},
-
+#endif
 	.generic_bulk_ctrl_endpoint = 0x81,
 	.num_adapters = 1,
 	.download_firmware = dw2102_load_firmware,
@@ -2420,9 +2529,10 @@ static struct dvb_usb_device_properties su3000_properties = {
 	.size_of_priv = sizeof(struct dw2102_state),
 	.power_ctrl = su3000_power_ctrl,
 	.num_adapters = 1,
+	.no_reconnect = 1,
 	.identify_state	= su3000_identify_state,
-	.i2c_algo = &su3000_i2c_algo,
-
+	.i2c_algo = &new_su3000_i2c_algo,
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_SU3000,
@@ -2430,7 +2540,7 @@ static struct dvb_usb_device_properties su3000_properties = {
 		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
-
+#endif
 	.read_mac_address = su3000_read_mac_address,
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -2441,16 +2551,31 @@ static struct dvb_usb_device_properties su3000_properties = {
 		.fe = {{
 			.streaming_ctrl   = su3000_streaming_ctrl,
 			.frontend_attach  = su3000_frontend_attach,
+#if 0
+			.stream = {
+				.type = USB_ISOC,
+				.count = 5,
+				.endpoint = 0x82,
+				.u = {
+					.isoc = {
+						.framesperurb = 4,
+						.framesize = 940,
+						.interval = 1,
+					}
+				}
+			}
+#else
 			.stream = {
 				.type = USB_BULK,
 				.count = 8,
 				.endpoint = 0x82,
 				.u = {
 					.bulk = {
-						.buffersize = 4096,
+						.buffersize = 8192,
 					}
 				}
 			}
+#endif
 		}},
 		}
 	},
@@ -2505,7 +2630,7 @@ static struct dvb_usb_device_properties s421_properties = {
 	.num_adapters = 1,
 	.identify_state	= su3000_identify_state,
 	.i2c_algo = &su3000_i2c_algo,
-
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_SU3000,
@@ -2513,7 +2638,7 @@ static struct dvb_usb_device_properties s421_properties = {
 		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
-
+#endif
 	.read_mac_address = su3000_read_mac_address,
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -2558,7 +2683,7 @@ static struct dvb_usb_device_properties t220_properties = {
 	.num_adapters = 1,
 	.identify_state	= su3000_identify_state,
 	.i2c_algo = &su3000_i2c_algo,
-
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 150,
 		.rc_codes = RC_MAP_SU3000,
@@ -2566,7 +2691,7 @@ static struct dvb_usb_device_properties t220_properties = {
 		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
-
+#endif
 	.read_mac_address = su3000_read_mac_address,
 
 	.generic_bulk_ctrl_endpoint = 0x01,
@@ -2607,7 +2732,7 @@ static struct dvb_usb_device_properties tt_s2_4600_properties = {
 	.num_adapters = 1,
 	.identify_state	= su3000_identify_state,
 	.i2c_algo = &su3000_i2c_algo,
-
+#ifdef USE_REMOTE
 	.rc.core = {
 		.rc_interval = 250,
 		.rc_codes = RC_MAP_TT_1500,
@@ -2615,7 +2740,7 @@ static struct dvb_usb_device_properties tt_s2_4600_properties = {
 		.allowed_protos   = RC_PROTO_BIT_RC5,
 		.rc_query = su3000_rc_query,
 	},
-
+#endif
 	.read_mac_address = su3000_read_mac_address,
 
 	.generic_bulk_ctrl_endpoint = 0x01,
