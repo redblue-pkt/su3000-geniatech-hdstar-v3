@@ -1144,7 +1144,7 @@ static struct stv0900_config prof_7500_stv0900_config = {
 
 static struct ds3000_config su3000_ds3000_config = {
 	.demod_address = 0x68,
-	.ci_mode = 1,
+	.ci_mode = 0,
 	.set_lock_led = dw210x_led_ctrl,
 };
 
@@ -1569,13 +1569,13 @@ attach2:
 	/* attach demod */
 	m88ds3103_pdata.clk = 27000000;
 	m88ds3103_pdata.i2c_wr_max = 33;
-	m88ds3103_pdata.ts_mode = M88DS3103_TS_CI;
+	m88ds3103_pdata.ts_mode = M88DS3103_TS_PARALLEL;
 	m88ds3103_pdata.ts_clk = 16000;
 	m88ds3103_pdata.ts_clk_pol = 0;
 	m88ds3103_pdata.spec_inv = 0;
 	m88ds3103_pdata.agc = 0x99;
 	m88ds3103_pdata.agc_inv = 0;
-	m88ds3103_pdata.clk_out = M88DS3103_CLOCK_OUT_ENABLED;
+	m88ds3103_pdata.clk_out = M88DS3103_CLOCK_OUT_DISABLED;
 	m88ds3103_pdata.envelope_mode = 0;
 	m88ds3103_pdata.lnb_hv_pol = 1;
 	m88ds3103_pdata.lnb_en_pol = 0;
